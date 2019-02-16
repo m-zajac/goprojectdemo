@@ -43,12 +43,31 @@ func (s *Service) MostActiveContributors(
 		return nil, errors.Wrap(err, "retrieving projects")
 	}
 
+	stats, err := s.gatherStats(ctx, projects)
+	if err != nil {
+		return nil, err
+	}
+
+	sort.Slice(stats, func(i, j int) bool {
+		return stats[i].Commits > stats[j].Commits
+	})
+	if len(stats) > count {
+		stats = stats[:count]
+	}
+
+	return stats, nil
+}
+
+// gatherStats calls client for stats for each project in parallel.
+// Returns aggregated results.
+func (s *Service) gatherStats(ctx context.Context, projects []Project) ([]ContributorStats, error) {
 	type respWrapper struct {
 		owner string
 		name  string
 		stats []ContributorStats
 		err   error
 	}
+
 	responses := make(chan respWrapper, len(projects))
 	ctx, cancel := context.WithCancel(ctx)
 	defer cancel()
@@ -90,13 +109,6 @@ func (s *Service) MostActiveContributors(
 	result := make([]ContributorStats, 0, len(statsMap))
 	for _, el := range statsMap {
 		result = append(result, el)
-	}
-	sort.Slice(result, func(i, j int) bool {
-		return result[i].Commits > result[j].Commits
-	})
-
-	if len(result) > count {
-		result = result[:count]
 	}
 
 	return result, nil
