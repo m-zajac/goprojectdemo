@@ -8,7 +8,7 @@ import (
 	"github.com/m-zajac/goprojectdemo/app"
 
 	"github.com/kelseyhightower/envconfig"
-	"github.com/m-zajac/goprojectdemo/adapters/github"
+	"github.com/m-zajac/goprojectdemo/adapter/github"
 	"github.com/m-zajac/goprojectdemo/transport/http"
 )
 
