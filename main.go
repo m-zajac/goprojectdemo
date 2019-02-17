@@ -28,9 +28,17 @@ func main() {
 		conf.GithubAPIToken,
 		conf.GithubTimeout,
 	)
+	githubCachedClient, err := github.NewCachedClient(
+		githubClient,
+		conf.CacheSize,
+		conf.CacheTTL,
+	)
+	if err != nil {
+		log.Fatalf("couldn't create github client cache: %v", err)
+	}
 
 	service := app.NewService(
-		githubClient,
+		githubCachedClient,
 	)
 
 	mux := http.NewMux(service, 60*time.Second)

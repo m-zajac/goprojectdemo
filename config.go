@@ -8,4 +8,6 @@ type Config struct {
 	GithubAPIAddress string        `default:"https://api.github.com"`
 	GithubAPIToken   string        `default:""`
 	GithubTimeout    time.Duration `default:"10s"`
+	CacheSize        int           `default:"10000"`
+	CacheTTL         time.Duration `default:"10m"`
 }

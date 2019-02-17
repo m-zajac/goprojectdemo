@@ -49,7 +49,7 @@ func NewClient(doer HTTPDoer, address string, authToken string, timeout time.Dur
 	return &c
 }
 
-// ProjectsByLanguage returns projects by given programming language name
+// ProjectsByLanguage returns projects by given programming language name.
 func (c *Client) ProjectsByLanguage(ctx context.Context, language string, count int) ([]app.Project, error) {
 	if language == "" {
 		return nil, app.InvalidRequestError("lanuage cannot be empty")
@@ -87,7 +87,7 @@ func (c *Client) ProjectsByLanguage(ctx context.Context, language string, count 
 	return resp.ToProjects(), nil
 }
 
-// StatsByProject returns stats by given github project params
+// StatsByProject returns stats by given github project params.
 func (c *Client) StatsByProject(ctx context.Context, name string, owner string) ([]app.ContributorStats, error) {
 	if name == "" {
 		return nil, app.InvalidRequestError("project's name cannot be empty")
