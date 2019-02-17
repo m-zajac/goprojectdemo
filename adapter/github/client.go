@@ -15,12 +15,12 @@ import (
 	"github.com/pkg/errors"
 )
 
-// HTTPDoer can execute http request
+// HTTPDoer can execute http request.
 type HTTPDoer interface {
 	Do(*http.Request) (*http.Response, error)
 }
 
-// Client returns details about gihub projects and stats
+// Client returns details about gihub projects and stats.
 type Client struct {
 	doer           HTTPDoer
 	address        string
@@ -30,6 +30,7 @@ type Client struct {
 
 	projectsResponseMaxSize int
 	statsResponseMaxSize    int
+	numRetriesOnAccepted    int
 }
 
 // NewClient creates new github client.
@@ -44,6 +45,7 @@ func NewClient(doer HTTPDoer, address string, authToken string, timeout time.Dur
 
 		projectsResponseMaxSize: 1024 * 1024 * 10,
 		statsResponseMaxSize:    1024 * 1024 * 30,
+		numRetriesOnAccepted:    7,
 	}
 
 	return &c
@@ -107,7 +109,7 @@ func (c *Client) StatsByProject(ctx context.Context, name string, owner string) 
 	}
 
 	// Github returns status 202 when processing data.
-	// Should wait a bit and try again
+	// Should wait a bit and try again.
 	var tries int
 	var body []byte
 	for {
@@ -117,7 +119,7 @@ func (c *Client) StatsByProject(ctx context.Context, name string, owner string) 
 			return nil, err
 		}
 		if code == http.StatusAccepted {
-			if tries < 5 {
+			if tries < c.numRetriesOnAccepted {
 				time.Sleep(c.acceptWaitTime)
 				continue
 			}
@@ -148,7 +150,7 @@ func (c *Client) makeRequest(ctx context.Context, req *http.Request, maxBytes in
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "doing http request")
 	}
-	// Always drain body before close to allow connection reuse
+	// Always drain body before close to allow connection reuse.
 	// See: http://tleyden.github.io/blog/2016/11/21/tuning-the-go-http-client-library-for-load-testing/
 	defer func() {
 		io.CopyN(ioutil.Discard, resp.Body, 1024)

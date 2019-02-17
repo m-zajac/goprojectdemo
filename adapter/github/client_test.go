@@ -331,9 +331,13 @@ func TestClient_StatsByProject(t *testing.T) {
 					http.StatusAccepted,
 					http.StatusAccepted,
 					http.StatusAccepted,
+					http.StatusAccepted,
+					http.StatusAccepted,
 					http.StatusOK,
 				},
 				Bodies: [][]byte{
+					{},
+					{},
 					{},
 					{},
 					{},
@@ -346,7 +350,7 @@ func TestClient_StatsByProject(t *testing.T) {
 			owner:        "Avik-Jain",
 			want:         nil,
 			wantErr:      true,
-			wantAPICalls: 5,
+			wantAPICalls: 7,
 		},
 	}
 	for _, tt := range tests {
