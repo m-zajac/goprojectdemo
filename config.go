@@ -4,10 +4,10 @@ import "time"
 
 // Config is the container for app configuration
 type Config struct {
-	// HTTPServerAddress - listen addres for http server
+	// HTTPServerAddress - listen address for http server
 	HTTPServerAddress string `default:"0.0.0.0:8080"`
 
-	// GithubAPIAddress - addres for rest api with protocol
+	// GithubAPIAddress - address for rest api with protocol
 	GithubAPIAddress string `default:"https://api.github.com"`
 
 	// GithubAPIToken - auth token for rest github api (optional, rate limit is lower without this token)
