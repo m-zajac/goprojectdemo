@@ -7,18 +7,18 @@ import (
 	"github.com/pkg/errors"
 )
 
-// GithubClient returns details about gihub projects and stats
+// GithubClient returns details about gihub projects and stats.
 type GithubClient interface {
 	ProjectsByLanguage(ctx context.Context, language string, count int) ([]Project, error)
 	StatsByProject(ctx context.Context, name string, owner string) ([]ContributorStats, error)
 }
 
-// Service is main apps entry point. Provides all app functionality
+// Service is main apps entry point. Provides all app functionality.
 type Service struct {
 	githubClient GithubClient
 }
 
-// NewService creates new Service instance
+// NewService creates new Service instance.
 func NewService(githubClient GithubClient) *Service {
 	return &Service{
 		githubClient: githubClient,

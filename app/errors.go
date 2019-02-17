@@ -2,10 +2,10 @@ package app
 
 import "github.com/pkg/errors"
 
-// InvalidRequestError is special error type returned when any request params are invalid
+// InvalidRequestError is special error type returned when any request params are invalid.
 type InvalidRequestError string
 
-// Error implements error interface
+// Error implements error interface.
 func (e InvalidRequestError) Error() string {
 	return string(e)
 }
@@ -16,7 +16,7 @@ func (InvalidRequestError) IsInvalidRequest() bool {
 	return true
 }
 
-// IsInvalidRequestError checks if given error is caused by invalid request
+// IsInvalidRequestError checks if given error is caused by invalid request.
 func IsInvalidRequestError(err error) bool {
 	type invalidReqErr interface {
 		IsInvalidRequest() bool

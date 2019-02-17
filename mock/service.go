@@ -6,7 +6,7 @@ import (
 	"github.com/m-zajac/goprojectdemo/app"
 )
 
-// Service mocks app.Service
+// Service mocks app.Service.
 type Service struct {
 	MostActiveContributorsFunc func(
 		ctx context.Context,
@@ -16,7 +16,7 @@ type Service struct {
 	) ([]app.ContributorStats, error)
 }
 
-// MostActiveContributors returns fake contributors data
+// MostActiveContributors returns fake contributors data.
 func (s *Service) MostActiveContributors(
 	ctx context.Context,
 	language string,

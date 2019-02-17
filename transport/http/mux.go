@@ -9,7 +9,7 @@ import (
 	"github.com/m-zajac/goprojectdemo/app"
 )
 
-// Service can return most active contributors
+// Service can return most active contributors.
 type Service interface {
 	MostActiveContributors(
 		ctx context.Context,
@@ -19,7 +19,7 @@ type Service interface {
 	) ([]app.ContributorStats, error)
 }
 
-// NewMux creates router for app's http server
+// NewMux creates router for app's http server.
 func NewMux(service Service, timeout time.Duration) *http.ServeMux {
 	timeoutMiddleware := NewTimeoutMiddleware(timeout)
 

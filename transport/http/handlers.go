@@ -34,7 +34,7 @@ func newContributorsResponse(language string, contributions []app.ContributorSta
 	}
 }
 
-// NewContributorsHandler creates handlerfunc returning contributions response
+// NewContributorsHandler creates handlerfunc returning contributions response.
 func NewContributorsHandler(
 	getLanguage func(*http.Request) string,
 	service Service,

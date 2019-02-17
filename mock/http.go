@@ -6,7 +6,7 @@ import (
 	"net/http"
 )
 
-// HTTPDoer mocks http.Client
+// HTTPDoer mocks http.Client.
 type HTTPDoer struct {
 	Statuses []int
 	Bodies   [][]byte
@@ -18,7 +18,7 @@ type HTTPDoer struct {
 	i int
 }
 
-// Do fakes executing http request
+// Do fakes executing http request.
 func (d *HTTPDoer) Do(r *http.Request) (*http.Response, error) {
 	defer func() {
 		d.i++

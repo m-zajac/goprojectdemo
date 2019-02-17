@@ -10,7 +10,7 @@ import (
 	"github.com/pkg/errors"
 )
 
-func TestService_MostActiveContributors(t *testing.T) {
+func TestServiceMostActiveContributors(t *testing.T) {
 	t.Parallel()
 
 	tests := []struct {

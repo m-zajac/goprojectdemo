@@ -9,13 +9,13 @@ import (
 	"time"
 )
 
-// Server handles app's http requests
+// Server handles app's http requests.
 type Server struct {
 	addr    string
 	handler http.Handler
 }
 
-// NewServer creates new Server instance
+// NewServer creates new Server instance.
 func NewServer(addr string, handler http.Handler) *Server {
 	return &Server{
 		addr:    addr,
