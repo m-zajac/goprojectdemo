@@ -1,12 +1,18 @@
 package http
 
 import (
+	"log"
 	"net/http"
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
 
 	"github.com/m-zajac/goprojectdemo/app"
+)
+
+const (
+	defaultHandlerCountValue         = 10
+	defaultHandlerProjectsCountValue = 5
 )
 
 type contributor struct {
@@ -41,8 +47,8 @@ func NewContributorsHandler(
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lang := getLanguage(r)
-		count := getIntParam(r, "count", 10)
-		projectsCount := getIntParam(r, "projectsCount", 5)
+		count := getIntParam(r, "count", defaultHandlerCountValue)
+		projectsCount := getIntParam(r, "projectsCount", defaultHandlerProjectsCountValue)
 
 		contributions, err := service.MostActiveContributors(r.Context(), lang, projectsCount, count)
 		if err != nil {
@@ -52,6 +58,7 @@ func NewContributorsHandler(
 			}
 
 			http.Error(w, "", http.StatusInternalServerError)
+			log.Printf("contributors http handler: service returned error: %v\n", err)
 			return
 		}
 

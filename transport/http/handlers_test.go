@@ -15,9 +15,6 @@ import (
 func TestNewContributorsHandler(t *testing.T) {
 	t.Parallel()
 
-	defaultProjectsCount := 5
-	defaultCount := 10
-
 	tests := []struct {
 		name            string
 		language        string
@@ -38,11 +35,11 @@ func TestNewContributorsHandler(t *testing.T) {
 						projectsCount int,
 						count int,
 					) ([]app.ContributorStats, error) {
-						if projectsCount != defaultProjectsCount {
-							t.Errorf("service: invalid projectsCount %d, want %d", projectsCount, defaultProjectsCount)
+						if projectsCount != defaultHandlerProjectsCountValue {
+							t.Errorf("service: invalid projectsCount %d, want %d", projectsCount, defaultHandlerProjectsCountValue)
 						}
-						if count != defaultCount {
-							t.Errorf("service: invalid count %d, want %d", count, defaultCount)
+						if count != defaultHandlerCountValue {
+							t.Errorf("service: invalid count %d, want %d", count, defaultHandlerCountValue)
 						}
 						return nil, nil
 					},
