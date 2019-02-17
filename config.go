@@ -24,4 +24,13 @@ type Config struct {
 
 	// GithubClientCacheTTL - maximum lifetime for github client cache entries
 	GithubClientCacheTTL time.Duration `default:"10m"`
+
+	// GithubClientDBPath - filepath for bolt db data
+	GithubClientDBPath string `default:"./github.data"`
+
+	// GithubClientDBBucketName - bolt db bucket name
+	GithubClientDBBucketName string `default:"github"`
+
+	// GithubClientDBDataTTL - maximum lifetime for staled data in db
+	GithubClientDBDataTTL time.Duration `default:"8h"`
 }
