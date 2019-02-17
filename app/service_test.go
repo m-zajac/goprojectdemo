@@ -69,7 +69,7 @@ func TestServiceMostActiveContributors(t *testing.T) {
 							t.Errorf("invalid count arg, want 2, got %d", count)
 						}
 						return []app.Project{
-							app.Project{
+							{
 								ID:         1,
 								Name:       "project",
 								OwnerLogin: "owner",
@@ -96,7 +96,7 @@ func TestServiceMostActiveContributors(t *testing.T) {
 							t.Errorf("invalid count arg, want 1, got %d", count)
 						}
 						return []app.Project{
-							app.Project{
+							{
 								ID:         1,
 								Name:       "project",
 								OwnerLogin: "owner",
@@ -111,21 +111,21 @@ func TestServiceMostActiveContributors(t *testing.T) {
 							t.Errorf("invalid owner arg, want 'owner', got %s", name)
 						}
 						return []app.ContributorStats{
-							app.ContributorStats{
+							{
 								Commits: 3,
 								Contributor: app.Contributor{
 									ID:    1,
 									Login: "cont1",
 								},
 							},
-							app.ContributorStats{
+							{
 								Commits: 5,
 								Contributor: app.Contributor{
 									ID:    2,
 									Login: "cont2",
 								},
 							},
-							app.ContributorStats{
+							{
 								Commits: 4,
 								Contributor: app.Contributor{
 									ID:    3,
@@ -140,14 +140,14 @@ func TestServiceMostActiveContributors(t *testing.T) {
 			projectsCount: 1,
 			count:         2,
 			want: []app.ContributorStats{
-				app.ContributorStats{
+				{
 					Commits: 5,
 					Contributor: app.Contributor{
 						ID:    2,
 						Login: "cont2",
 					},
 				},
-				app.ContributorStats{
+				{
 					Commits: 4,
 					Contributor: app.Contributor{
 						ID:    3,

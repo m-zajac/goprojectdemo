@@ -22,14 +22,14 @@ func Test_searchResponse_ToProjects(t *testing.T) {
 			name: "2 items",
 			response: searchResponse{
 				Items: []searchResponseItem{
-					searchResponseItem{
+					{
 						ID:   1,
 						Name: "x",
 						Owner: searchResponseItemOwner{
 							Login: "y",
 						},
 					},
-					searchResponseItem{
+					{
 						ID:   2,
 						Name: "a",
 						Owner: searchResponseItemOwner{
@@ -39,12 +39,12 @@ func Test_searchResponse_ToProjects(t *testing.T) {
 				},
 			},
 			want: []app.Project{
-				app.Project{
+				{
 					ID:         1,
 					Name:       "x",
 					OwnerLogin: "y",
 				},
-				app.Project{
+				{
 					ID:         2,
 					Name:       "a",
 					OwnerLogin: "b",
@@ -91,14 +91,14 @@ func Test_statsResponse_ToStats(t *testing.T) {
 				},
 			},
 			want: []app.ContributorStats{
-				app.ContributorStats{
+				{
 					Commits: 2,
 					Contributor: app.Contributor{
 						ID:    1,
 						Login: "x",
 					},
 				},
-				app.ContributorStats{
+				{
 					Commits: 4,
 					Contributor: app.Contributor{
 						ID:    3,

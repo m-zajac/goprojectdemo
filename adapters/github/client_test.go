@@ -78,7 +78,7 @@ func TestClient_ProjectsByLanguage(t *testing.T) {
 			language: "go",
 			count:    1,
 			want: []app.Project{
-				app.Project{
+				{
 					ID:         23096959,
 					Name:       "go",
 					OwnerLogin: "golang",
@@ -244,14 +244,14 @@ func TestClient_StatsByProject(t *testing.T) {
 			projectName: "100-Days-Of-ML-Code",
 			owner:       "Avik-Jain",
 			want: []app.ContributorStats{
-				app.ContributorStats{
+				{
 					Commits: 3,
 					Contributor: app.Contributor{
 						ID:    15854038,
 						Login: "minderov",
 					},
 				},
-				app.ContributorStats{
+				{
 					Commits: 7,
 					Contributor: app.Contributor{
 						ID:    17466938,
@@ -296,22 +296,22 @@ func TestClient_StatsByProject(t *testing.T) {
 					http.StatusOK,
 				},
 				Bodies: [][]byte{
-					[]byte{},
-					[]byte{},
+					{},
+					{},
 					validStatsJSON,
 				},
 			},
 			projectName: "100-Days-Of-ML-Code",
 			owner:       "Avik-Jain",
 			want: []app.ContributorStats{
-				app.ContributorStats{
+				{
 					Commits: 3,
 					Contributor: app.Contributor{
 						ID:    15854038,
 						Login: "minderov",
 					},
 				},
-				app.ContributorStats{
+				{
 					Commits: 7,
 					Contributor: app.Contributor{
 						ID:    17466938,
@@ -334,11 +334,11 @@ func TestClient_StatsByProject(t *testing.T) {
 					http.StatusOK,
 				},
 				Bodies: [][]byte{
-					[]byte{},
-					[]byte{},
-					[]byte{},
-					[]byte{},
-					[]byte{},
+					{},
+					{},
+					{},
+					{},
+					{},
 					validStatsJSON,
 				},
 			},

@@ -144,7 +144,7 @@ func TestNewContributorsHandler(t *testing.T) {
 						count int,
 					) ([]app.ContributorStats, error) {
 						return []app.ContributorStats{
-							app.ContributorStats{
+							{
 								Commits: 5,
 								Contributor: app.Contributor{
 									ID:    1,
