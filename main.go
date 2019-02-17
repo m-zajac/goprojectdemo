@@ -5,6 +5,8 @@ import (
 	netHttp "net/http"
 	"time"
 
+	"github.com/m-zajac/goprojectdemo/limiter"
+
 	"github.com/m-zajac/goprojectdemo/app"
 
 	"github.com/kelseyhightower/envconfig"
@@ -21,17 +23,21 @@ func main() {
 	httpClient := &netHttp.Client{
 		Timeout: 30 * time.Second,
 	}
+	limitedHTTPClient := limiter.NewLimitedHTTPDoer(
+		httpClient,
+		conf.GithubAPIRateLimit,
+	)
 
 	githubClient := github.NewClient(
-		httpClient,
+		limitedHTTPClient,
 		conf.GithubAPIAddress,
 		conf.GithubAPIToken,
 		conf.GithubTimeout,
 	)
 	githubCachedClient, err := github.NewCachedClient(
 		githubClient,
-		conf.CacheSize,
-		conf.CacheTTL,
+		conf.GithubClientCacheSize,
+		conf.GithubClientCacheTTL,
 	)
 	if err != nil {
 		log.Fatalf("couldn't create github client cache: %v", err)
@@ -43,7 +49,7 @@ func main() {
 
 	mux := http.NewMux(service, 60*time.Second)
 	server := http.NewServer(
-		conf.Address,
+		conf.HTTPServerAddress,
 		mux,
 	)
 
