@@ -5,6 +5,7 @@ import (
 	netHttp "net/http"
 	"time"
 
+	"github.com/m-zajac/goprojectdemo/database"
 	"github.com/m-zajac/goprojectdemo/limiter"
 	"github.com/sirupsen/logrus"
 
@@ -32,6 +33,14 @@ func main() {
 		conf.GithubAPIRateLimit,
 	)
 
+	kvStore, err := database.NewBoltKVStore(
+		conf.GithubDBPath,
+		conf.GithubDBBucketName,
+	)
+	if err != nil {
+		log.Fatalf("coludn't create bolt kv store: %v", err)
+	}
+
 	githubClient := github.NewClient(
 		limitedHTTPClient,
 		conf.GithubAPIAddress,
@@ -40,9 +49,8 @@ func main() {
 	)
 	githubStaleDataClient, err := github.NewClientWithStaleData(
 		githubClient,
-		conf.GithubClientDBPath,
-		conf.GithubClientDBBucketName,
-		conf.GithubClientDBDataTTL,
+		kvStore,
+		conf.GithubDBDataTTL,
 		l.WithField("component", "githubStaleDataClient"),
 	)
 	if err != nil {
@@ -65,6 +73,7 @@ func main() {
 	mux := http.NewMux(service, 60*time.Second)
 	server := http.NewServer(
 		conf.HTTPServerAddress,
+		conf.HTTPProfileServerAddress,
 		mux,
 	)
 

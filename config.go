@@ -7,6 +7,9 @@ type Config struct {
 	// HTTPServerAddress - listen address for http server
 	HTTPServerAddress string `default:"0.0.0.0:8080"`
 
+	// HTTPProfileServerAddress - listen address for profiler http server. If empty, profiler server is disabled
+	HTTPProfileServerAddress string `default:""`
+
 	// GithubAPIAddress - address for rest api with protocol
 	GithubAPIAddress string `default:"https://api.github.com"`
 
@@ -25,12 +28,12 @@ type Config struct {
 	// GithubClientCacheTTL - maximum lifetime for github client cache entries
 	GithubClientCacheTTL time.Duration `default:"10m"`
 
-	// GithubClientDBPath - filepath for bolt db data
-	GithubClientDBPath string `default:"./github.data"`
+	// GithubDBPath - filepath for bolt db data
+	GithubDBPath string `default:"./github.data"`
 
-	// GithubClientDBBucketName - bolt db bucket name
-	GithubClientDBBucketName string `default:"github"`
+	// GithubDBBucketName - bolt db bucket name
+	GithubDBBucketName string `default:"github"`
 
-	// GithubClientDBDataTTL - maximum lifetime for staled data in db
-	GithubClientDBDataTTL time.Duration `default:"8h"`
+	// GithubDBDataTTL - maximum lifetime for staled data in db
+	GithubDBDataTTL time.Duration `default:"8h"`
 }
