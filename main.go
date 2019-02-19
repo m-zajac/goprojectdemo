@@ -40,6 +40,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("coludn't create bolt kv store: %v", err)
 	}
+	defer kvStore.Close()
 
 	githubClient := github.NewClient(
 		limitedHTTPClient,
@@ -56,6 +57,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("coludn't create github db client: %v", err)
 	}
+	githubStaleDataClient.RunScheduler()
 	defer githubStaleDataClient.Close()
 	githubCachedClient, err := github.NewCachedClient(
 		githubStaleDataClient,

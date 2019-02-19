@@ -15,7 +15,6 @@ import (
 type KVStore interface {
 	ReadKey(key []byte) ([]byte, error)
 	UpdateKey(key []byte, data []byte) error
-	Close() error
 }
 
 // ClientWithStaleData wraps GithubClient and returns data saved in db if possible.
@@ -33,7 +32,10 @@ type ClientWithStaleData struct {
 	projectUpdates chan projectsDBUpdateRequest
 	statsUpdates   chan statsDBUpdateRequest
 
-	// func for canceling internal worker loop and initializing db cleanup
+	// Chan for controlling scheduler - only used for unit testing.
+	schedulerPendingOps chan int
+
+	// Func for canceling internal worker loop and initializing db cleanup
 	stop func()
 }
 
@@ -44,7 +46,6 @@ func NewClientWithStaleData(
 	ttl time.Duration,
 	l logrus.FieldLogger,
 ) (*ClientWithStaleData, error) {
-	updatingCtx, updatingCtxCancel := context.WithCancel(context.Background())
 	c := ClientWithStaleData{
 		client:         client,
 		store:          store,
@@ -52,16 +53,69 @@ func NewClientWithStaleData(
 		l:              l,
 		projectUpdates: make(chan projectsDBUpdateRequest, 100),
 		statsUpdates:   make(chan statsDBUpdateRequest, 100),
-		stop:           updatingCtxCancel,
 	}
 
+	return &c, nil
+}
+
+// RunScheduler runs internal scheduling goroutine.
+// Doesn't block.
+func (c *ClientWithStaleData) RunScheduler() {
+	ctx, cancel := context.WithCancel(context.Background())
+	c.stop = cancel
+
 	go func() {
-		if err := c.runScheduler(updatingCtx); err != nil {
-			c.l.Errorf("ClientWithStaleData: finishing scheduler: %v", err)
+		pendingProjectUpdates := make(map[string]bool)
+		pendingStatsUpdates := make(map[string]bool)
+
+		doneProjectUpdates := make(chan string)
+		doneStatsUpdates := make(chan string)
+
+		for {
+			// This is intended for blocking scheduler for unit testing.
+			// In standard execution this is always nil.
+			if c.schedulerPendingOps != nil {
+				c.schedulerPendingOps <- len(pendingProjectUpdates) + len(pendingStatsUpdates)
+			}
+
+			select {
+			// Projects
+			case req := <-c.projectUpdates:
+				if pendingProjectUpdates[req.language] {
+					continue
+				}
+				pendingProjectUpdates[req.language] = true
+				go func(req projectsDBUpdateRequest) {
+					if err := c.updateProjects(req); err != nil {
+						c.l.Errorf("ClientWithStaleData scheduler: updating projects data: %v", err)
+					}
+					doneProjectUpdates <- req.language
+				}(req)
+			case key := <-doneProjectUpdates:
+				delete(pendingProjectUpdates, key)
+
+			// Stats
+			case req := <-c.statsUpdates:
+				key := fmt.Sprintf("%s/%s", req.owner, req.name)
+				if pendingStatsUpdates[key] {
+					continue
+				}
+				pendingStatsUpdates[key] = true
+				go func(req statsDBUpdateRequest) {
+					if err := c.updateStats(req); err != nil {
+						c.l.Errorf("ClientWithStaleData scheduler: updating stats data: %v", err)
+					}
+					doneStatsUpdates <- key
+				}(req)
+			case key := <-doneStatsUpdates:
+				delete(pendingStatsUpdates, key)
+
+			// Finish
+			case <-ctx.Done():
+				return
+			}
 		}
 	}()
-
-	return &c, nil
 }
 
 // ProjectsByLanguage returns projects by given programming language name.
@@ -154,54 +208,9 @@ func (c *ClientWithStaleData) StatsByProject(ctx context.Context, name string, o
 
 // Close cleanups scheduler and closes underlying database.
 func (c *ClientWithStaleData) Close() {
-	c.stop()
-}
-
-func (c *ClientWithStaleData) runScheduler(ctx context.Context) error {
-	pendingProjectUpdates := make(map[string]bool)
-	doneProjectUpdates := make(chan string)
-	pendingStatsUpdates := make(map[string]bool)
-	doneStatsUpdates := make(chan string)
-	for {
-		select {
-		// projects
-		case req := <-c.projectUpdates:
-			if pendingProjectUpdates[req.language] {
-				continue
-			}
-			pendingProjectUpdates[req.language] = true
-			go func(req projectsDBUpdateRequest) {
-				if err := c.updateProjects(req); err != nil {
-					c.l.Errorf("ClientWithStaleData scheduler: updating projects data: %v", err)
-				}
-				doneProjectUpdates <- req.language
-			}(req)
-		case key := <-doneProjectUpdates:
-			delete(pendingProjectUpdates, key)
-
-		// stats
-		case req := <-c.statsUpdates:
-			key := fmt.Sprintf("%s/%s", req.owner, req.name)
-			if pendingStatsUpdates[key] {
-				continue
-			}
-			pendingStatsUpdates[key] = true
-			go func(req statsDBUpdateRequest) {
-				if err := c.updateStats(req); err != nil {
-					c.l.Errorf("ClientWithStaleData scheduler: updating stats data: %v", err)
-				}
-				doneStatsUpdates <- key
-			}(req)
-		case key := <-doneStatsUpdates:
-			delete(pendingStatsUpdates, key)
-
-		// cleanup
-		case <-ctx.Done():
-			if err := c.store.Close(); err != nil {
-				return errors.Wrap(err, "closing store")
-			}
-			return nil
-		}
+	if c.stop != nil {
+		c.stop()
+		c.stop = nil
 	}
 }
 
@@ -268,11 +277,11 @@ func (c *ClientWithStaleData) saveStats(name string, owner string, stats []app.C
 }
 
 func (c *ClientWithStaleData) projectsDBKey(language string) []byte {
-	return []byte(language)
+	return []byte("pr/" + language)
 }
 
 func (c *ClientWithStaleData) statsDBKey(name string, owner string) []byte {
-	return []byte(owner + "/" + name)
+	return []byte("st/" + owner + "/" + name)
 }
 
 func (c *ClientWithStaleData) serializeProjects(entry projectsDBEntry) ([]byte, error) {
