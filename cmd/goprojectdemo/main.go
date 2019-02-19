@@ -2,6 +2,7 @@ package main
 
 import (
 	netHttp "net/http"
+	"sync"
 	"time"
 
 	"github.com/m-zajac/goprojectdemo/database"
@@ -12,6 +13,7 @@ import (
 
 	"github.com/kelseyhightower/envconfig"
 	"github.com/m-zajac/goprojectdemo/adapter/github"
+	"github.com/m-zajac/goprojectdemo/transport/grpc"
 	"github.com/m-zajac/goprojectdemo/transport/http"
 )
 
@@ -79,5 +81,25 @@ func main() {
 		l.WithField("component", "httpServer"),
 	)
 
-	server.Run()
+	grpcService := grpc.NewService(service)
+	grpcServer := grpc.NewServer(
+		grpcService,
+		conf.GRPCServerAddress,
+		l.WithField("component", "grpcServer"),
+	)
+
+	var wg sync.WaitGroup
+	wg.Add(1)
+	go func() {
+		server.Run()
+		wg.Done()
+	}()
+	wg.Add(1)
+	go func() {
+		if err := grpcServer.Run(); err != nil {
+			l.Fatalf("couldn't run grpc server: %v", err)
+		}
+		wg.Done()
+	}()
+	wg.Wait()
 }

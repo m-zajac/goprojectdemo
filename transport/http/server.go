@@ -73,7 +73,7 @@ func (s *Server) Run() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil && err != http.ErrServerClosed {
-		s.l.Errorf("server shutdown returned error: %v", err)
+		s.l.Errorf("http server shutdown returned error: %v", err)
 	}
 	s.l.Info("http server shut down")
 }

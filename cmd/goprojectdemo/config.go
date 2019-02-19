@@ -10,6 +10,9 @@ type Config struct {
 	// HTTPProfileServerAddress - listen address for profiler http server. If empty, profiler server is disabled
 	HTTPProfileServerAddress string `default:""`
 
+	// GRPCServerAddress - listen address for grpc server
+	GRPCServerAddress string `default:"0.0.0.0:9090"`
+
 	// GithubAPIAddress - address for rest api with protocol
 	GithubAPIAddress string `default:"https://api.github.com"`
 

@@ -10,6 +10,7 @@ import (
 	"github.com/m-zajac/goprojectdemo/app"
 	"github.com/m-zajac/goprojectdemo/mock"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func TestMux(t *testing.T) {
@@ -62,7 +63,8 @@ func TestMux(t *testing.T) {
 					}
 				},
 			}
-			mux := NewMux(service, tt.muxTimeout)
+			l := logrus.New()
+			mux := NewMux(service, tt.muxTimeout, l)
 
 			server := httptest.NewServer(mux)
 			defer server.Close()

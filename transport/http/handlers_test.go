@@ -10,6 +10,7 @@ import (
 	"github.com/m-zajac/goprojectdemo/app"
 	"github.com/m-zajac/goprojectdemo/mock"
 	"github.com/pkg/errors"
+	"github.com/sirupsen/logrus"
 )
 
 func TestNewContributorsHandler(t *testing.T) {
@@ -163,11 +164,13 @@ func TestNewContributorsHandler(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
+			l := logrus.New()
 			handler := NewContributorsHandler(
 				func(*http.Request) string {
 					return tt.language
 				},
 				tt.newService(t),
+				l,
 			)
 			req := tt.newRequest()
 			w := httptest.NewRecorder()

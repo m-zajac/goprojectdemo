@@ -2,7 +2,7 @@
 FROM golang:1.11 AS build-env
 # RUN apk update && apk upgrade && apk add --no-cache git
 ADD . /src
-RUN cd /src && CGO_ENABLED=0 go build
+RUN cd /src && CGO_ENABLED=0 go build ./cmd/goprojectdemo
 
 # final stage
 FROM alpine

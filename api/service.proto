@@ -1,0 +1,31 @@
+syntax = "proto3";
+
+package grpc;
+
+// The main app service definition.
+service Service {
+    // Return most active contributors
+    rpc MostActiveContributors (Request) returns (Reply) {}
+  }
+  
+  // The request message containing the user's name.
+  message Request {
+    string language = 1;
+    int32 projectsCount = 2;
+    int32 count = 3;
+  }
+  
+  // The response message containing the greetings
+  message Reply {
+    repeated Stat stat = 1;
+  }
+
+  message Stat {
+    Contributor contributor = 1;
+    int32 commits = 2;
+  }
+
+  message Contributor {
+    int64 id = 1;
+	string login = 2;
+  }
