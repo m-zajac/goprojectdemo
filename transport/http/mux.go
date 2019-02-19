@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/m-zajac/goprojectdemo/app"
+	"github.com/sirupsen/logrus"
 )
 
 // Service can return most active contributors.
@@ -20,7 +21,7 @@ type Service interface {
 }
 
 // NewMux creates router for app's http server.
-func NewMux(service Service, timeout time.Duration) *http.ServeMux {
+func NewMux(service Service, timeout time.Duration, l logrus.FieldLogger) *http.ServeMux {
 	timeoutMiddleware := NewTimeoutMiddleware(timeout)
 
 	contributorsPath := "/bestcontributors/"
@@ -29,6 +30,7 @@ func NewMux(service Service, timeout time.Duration) *http.ServeMux {
 			return strings.TrimPrefix(r.URL.Path, contributorsPath)
 		},
 		service,
+		l.WithField("handler", "contributorsHandler"),
 	)
 	contributorsHandler = timeoutMiddleware(contributorsHandler)
 

@@ -1,11 +1,11 @@
 package http
 
 import (
-	"log"
 	"net/http"
 	"strconv"
 
 	jsoniter "github.com/json-iterator/go"
+	"github.com/sirupsen/logrus"
 
 	"github.com/m-zajac/goprojectdemo/app"
 )
@@ -44,6 +44,7 @@ func newContributorsResponse(language string, contributions []app.ContributorSta
 func NewContributorsHandler(
 	getLanguage func(*http.Request) string,
 	service Service,
+	l logrus.FieldLogger,
 ) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
 		lang := getLanguage(r)
@@ -58,7 +59,7 @@ func NewContributorsHandler(
 			}
 
 			http.Error(w, "", http.StatusInternalServerError)
-			log.Printf("contributors http handler: service returned error: %v\n", err)
+			l.Errorf("contributors http handler: service returned error: %v\n", err)
 			return
 		}
 

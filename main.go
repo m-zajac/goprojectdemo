@@ -1,7 +1,6 @@
 package main
 
 import (
-	"log"
 	netHttp "net/http"
 	"time"
 
@@ -17,13 +16,13 @@ import (
 )
 
 func main() {
-	var conf Config
-	if err := envconfig.Process("", &conf); err != nil {
-		log.Fatalf("coludn't parse config: %v", err)
-	}
-
 	l := logrus.New()
 	l.Level = logrus.InfoLevel
+
+	var conf Config
+	if err := envconfig.Process("", &conf); err != nil {
+		l.Fatalf("coludn't parse config: %v", err)
+	}
 
 	httpClient := &netHttp.Client{
 		Timeout: 30 * time.Second,
@@ -38,7 +37,7 @@ func main() {
 		conf.GithubDBBucketName,
 	)
 	if err != nil {
-		log.Fatalf("coludn't create bolt kv store: %v", err)
+		l.Fatalf("coludn't create bolt kv store: %v", err)
 	}
 	defer kvStore.Close()
 
@@ -55,7 +54,7 @@ func main() {
 		l.WithField("component", "githubStaleDataClient"),
 	)
 	if err != nil {
-		log.Fatalf("coludn't create github db client: %v", err)
+		l.Fatalf("coludn't create github db client: %v", err)
 	}
 	githubStaleDataClient.RunScheduler()
 	defer githubStaleDataClient.Close()
@@ -65,18 +64,19 @@ func main() {
 		conf.GithubClientCacheTTL,
 	)
 	if err != nil {
-		log.Fatalf("couldn't create github client cache: %v", err)
+		l.Fatalf("couldn't create github client cache: %v", err)
 	}
 
 	service := app.NewService(
 		githubCachedClient,
 	)
 
-	mux := http.NewMux(service, 60*time.Second)
+	mux := http.NewMux(service, 60*time.Second, l.WithField("component", "mux"))
 	server := http.NewServer(
 		conf.HTTPServerAddress,
 		conf.HTTPProfileServerAddress,
 		mux,
+		l.WithField("component", "httpServer"),
 	)
 
 	server.Run()

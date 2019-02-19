@@ -2,7 +2,6 @@ package http
 
 import (
 	"context"
-	"log"
 	"net/http"
 	"os"
 	"os/signal"
@@ -10,6 +9,8 @@ import (
 
 	// enable http profiling
 	_ "net/http/pprof"
+
+	"github.com/sirupsen/logrus"
 )
 
 // Server handles app's http requests.
@@ -17,14 +18,16 @@ type Server struct {
 	addr        string
 	profileAddr string
 	handler     http.Handler
+	l           logrus.FieldLogger
 }
 
 // NewServer creates new Server instance.
-func NewServer(addr string, profileAddr string, handler http.Handler) *Server {
+func NewServer(addr string, profileAddr string, handler http.Handler, l logrus.FieldLogger) *Server {
 	return &Server{
 		addr:        addr,
 		profileAddr: profileAddr,
 		handler:     handler,
+		l:           l,
 	}
 }
 
@@ -47,8 +50,9 @@ func (s *Server) Run() {
 	signal.Notify(stop, os.Interrupt)
 
 	go func() {
+		s.l.Infof("starting http server, listening on %s", s.addr)
 		if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-			log.Printf("server returned error: %v", err)
+			s.l.Errorf("server returned error: %v", err)
 		}
 	}()
 
@@ -59,7 +63,7 @@ func (s *Server) Run() {
 		}
 		go func() {
 			if err := profilingServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
-				log.Printf("profiling server returned error: %v", err)
+				s.l.Errorf("profiling server returned error: %v", err)
 			}
 		}()
 		defer profilingServer.Close()
@@ -69,6 +73,7 @@ func (s *Server) Run() {
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
 	defer cancel()
 	if err := srv.Shutdown(ctx); err != nil && err != http.ErrServerClosed {
-		log.Printf("server shutdown returned error: %v", err)
+		s.l.Errorf("server shutdown returned error: %v", err)
 	}
+	s.l.Info("http server shut down")
 }
