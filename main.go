@@ -5,7 +5,9 @@ import (
 	netHttp "net/http"
 	"time"
 
+	"github.com/m-zajac/goprojectdemo/database"
 	"github.com/m-zajac/goprojectdemo/limiter"
+	"github.com/sirupsen/logrus"
 
 	"github.com/m-zajac/goprojectdemo/app"
 
@@ -17,8 +19,11 @@ import (
 func main() {
 	var conf Config
 	if err := envconfig.Process("", &conf); err != nil {
-		log.Fatalf("coludn't parse config: %v", err.Error())
+		log.Fatalf("coludn't parse config: %v", err)
 	}
+
+	l := logrus.New()
+	l.Level = logrus.InfoLevel
 
 	httpClient := &netHttp.Client{
 		Timeout: 30 * time.Second,
@@ -28,14 +33,34 @@ func main() {
 		conf.GithubAPIRateLimit,
 	)
 
+	kvStore, err := database.NewBoltKVStore(
+		conf.GithubDBPath,
+		conf.GithubDBBucketName,
+	)
+	if err != nil {
+		log.Fatalf("coludn't create bolt kv store: %v", err)
+	}
+	defer kvStore.Close()
+
 	githubClient := github.NewClient(
 		limitedHTTPClient,
 		conf.GithubAPIAddress,
 		conf.GithubAPIToken,
 		conf.GithubTimeout,
 	)
-	githubCachedClient, err := github.NewCachedClient(
+	githubStaleDataClient, err := github.NewClientWithStaleData(
 		githubClient,
+		kvStore,
+		conf.GithubDBDataTTL,
+		l.WithField("component", "githubStaleDataClient"),
+	)
+	if err != nil {
+		log.Fatalf("coludn't create github db client: %v", err)
+	}
+	githubStaleDataClient.RunScheduler()
+	defer githubStaleDataClient.Close()
+	githubCachedClient, err := github.NewCachedClient(
+		githubStaleDataClient,
 		conf.GithubClientCacheSize,
 		conf.GithubClientCacheTTL,
 	)
@@ -50,6 +75,7 @@ func main() {
 	mux := http.NewMux(service, 60*time.Second)
 	server := http.NewServer(
 		conf.HTTPServerAddress,
+		conf.HTTPProfileServerAddress,
 		mux,
 	)
 

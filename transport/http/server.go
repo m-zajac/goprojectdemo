@@ -7,19 +7,24 @@ import (
 	"os"
 	"os/signal"
 	"time"
+
+	// enable http profiling
+	_ "net/http/pprof"
 )
 
 // Server handles app's http requests.
 type Server struct {
-	addr    string
-	handler http.Handler
+	addr        string
+	profileAddr string
+	handler     http.Handler
 }
 
 // NewServer creates new Server instance.
-func NewServer(addr string, handler http.Handler) *Server {
+func NewServer(addr string, profileAddr string, handler http.Handler) *Server {
 	return &Server{
-		addr:    addr,
-		handler: handler,
+		addr:        addr,
+		profileAddr: profileAddr,
+		handler:     handler,
 	}
 }
 
@@ -46,6 +51,19 @@ func (s *Server) Run() {
 			log.Printf("server returned error: %v", err)
 		}
 	}()
+
+	if s.profileAddr != "" {
+		profilingServer := http.Server{
+			Addr:    s.profileAddr,
+			Handler: nil,
+		}
+		go func() {
+			if err := profilingServer.ListenAndServe(); err != nil && err != http.ErrServerClosed {
+				log.Printf("profiling server returned error: %v", err)
+			}
+		}()
+		defer profilingServer.Close()
+	}
 
 	<-stop
 	ctx, cancel := context.WithTimeout(context.Background(), 2*time.Second)
