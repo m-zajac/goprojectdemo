@@ -24,7 +24,6 @@ func TestClient_ProjectsByLanguage(t *testing.T) {
 	tests := []struct {
 		name     string
 		doer     *mock.HTTPDoer
-		timeout  time.Duration
 		language string
 		count    int
 		want     []app.Project
@@ -112,10 +111,6 @@ func TestClient_ProjectsByLanguage(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			timeout := tt.timeout
-			if timeout == 0 {
-				timeout = time.Minute
-			}
 			c := NewClient(tt.doer, "https://fake", "token")
 			got, err := c.ProjectsByLanguage(
 				context.Background(),
@@ -210,7 +205,6 @@ func TestClient_StatsByProject(t *testing.T) {
 	tests := []struct {
 		name         string
 		doer         *mock.HTTPDoer
-		timeout      time.Duration
 		projectName  string
 		owner        string
 		want         []app.ContributorStats
