@@ -38,7 +38,7 @@ func (e TooManyRequestsError) Error() string {
 	return string(e)
 }
 
-// IsInvalidReIsTooManyRequestsquest tells that this error is 'too many requests'.
+// IsTooManyRequests tells that this error is 'too many requests'.
 // Returns always true.
 func (TooManyRequestsError) IsTooManyRequests() bool {
 	return true
