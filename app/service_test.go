@@ -4,6 +4,7 @@ import (
 	"context"
 	"reflect"
 	"testing"
+	"time"
 
 	"github.com/m-zajac/goprojectdemo/app"
 	"github.com/m-zajac/goprojectdemo/mock"
@@ -160,7 +161,7 @@ func TestServiceMostActiveContributors(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			s := app.NewService(tt.newGithubClient(t))
+			s := app.NewService(tt.newGithubClient(t), time.Minute)
 			got, err := s.MostActiveContributors(
 				context.Background(),
 				tt.language,

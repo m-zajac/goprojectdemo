@@ -13,6 +13,9 @@ type Config struct {
 	// GRPCServerAddress - listen address for grpc server
 	GRPCServerAddress string `default:"0.0.0.0:9090"`
 
+	// ServiceResponseTimeout - timeout for service execution
+	ServiceResponseTimeout time.Duration `default:"30s"`
+
 	// GithubAPIAddress - address for rest api with protocol
 	GithubAPIAddress string `default:"https://api.github.com"`
 
@@ -20,10 +23,7 @@ type Config struct {
 	GithubAPIToken string `default:""`
 
 	// GithubAPIRateLimit - max frequency for github rest api calls
-	GithubAPIRateLimit int `default:"5"`
-
-	// GithubTimeout - timeout for github api calls
-	GithubTimeout time.Duration `default:"15s"`
+	GithubAPIRateLimit float64 `default:"0.5"`
 
 	// GithubClientCacheSize - maximum number of elements in cache for each github client method
 	GithubClientCacheSize int `default:"10000"`
@@ -39,4 +39,7 @@ type Config struct {
 
 	// GithubDBDataTTL - maximum lifetime for staled data in db
 	GithubDBDataTTL time.Duration `default:"8h"`
+
+	// GithubDBDataRefreshTTL - maximum lifetime for staled data to be queued for refresh
+	GithubDBDataRefreshTTL time.Duration `default:"1h"`
 }

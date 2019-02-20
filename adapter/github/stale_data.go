@@ -19,15 +19,15 @@ type KVStore interface {
 
 // ClientWithStaleData wraps GithubClient and returns data saved in db if possible.
 //
-// If data is available in db and ttl isn't exceeded, then data is returned and job for update is scheduled.
-// Returned data is considered as "staled" in this case, but it would be eventually updated.
-//
-// If data is not available in db, client is called directly. Data returned from client is scheduled to save in db, then returned.
+// If data is not available (or datas ttl is exceeded), update is scheduled, and app.ScheduledForLaterError is returned with empty data.
+// If data is available, ttl is ok, but refreshTTL is exceeded, additional job for update is scheduled. Exisiting data is returned immediately.
+// If data is available and no ttl is exceeded, then data is returned immediately.
 type ClientWithStaleData struct {
-	client app.GithubClient
-	store  KVStore
-	ttl    time.Duration
-	l      logrus.FieldLogger
+	client     app.GithubClient
+	store      KVStore
+	ttl        time.Duration
+	refreshTTL time.Duration
+	l          logrus.FieldLogger
 
 	projectUpdates chan projectsDBUpdateRequest
 	statsUpdates   chan statsDBUpdateRequest
@@ -44,15 +44,17 @@ func NewClientWithStaleData(
 	client app.GithubClient,
 	store KVStore,
 	ttl time.Duration,
+	refreshTTL time.Duration,
 	l logrus.FieldLogger,
 ) (*ClientWithStaleData, error) {
 	c := ClientWithStaleData{
 		client:         client,
 		store:          store,
 		ttl:            ttl,
+		refreshTTL:     refreshTTL,
 		l:              l,
-		projectUpdates: make(chan projectsDBUpdateRequest, 100),
-		statsUpdates:   make(chan statsDBUpdateRequest, 100),
+		projectUpdates: make(chan projectsDBUpdateRequest, 1000),
+		statsUpdates:   make(chan statsDBUpdateRequest, 1000),
 	}
 
 	return &c, nil
@@ -85,9 +87,13 @@ func (c *ClientWithStaleData) RunScheduler() {
 					continue
 				}
 				pendingProjectUpdates[req.language] = true
+
 				go func(req projectsDBUpdateRequest) {
+					c.l.Infof("ClientWithStaleData: scheduled projects update for %s...", req.language)
 					if err := c.updateProjects(req); err != nil {
 						c.l.Errorf("ClientWithStaleData scheduler: updating projects data: %v", err)
+					} else {
+						c.l.Infof("ClientWithStaleData: scheduled projects update for %s done", req.language)
 					}
 					doneProjectUpdates <- req.language
 				}(req)
@@ -101,9 +107,13 @@ func (c *ClientWithStaleData) RunScheduler() {
 					continue
 				}
 				pendingStatsUpdates[key] = true
+
 				go func(req statsDBUpdateRequest) {
+					c.l.Infof("ClientWithStaleData: scheduled stats update for %s/%s...", req.owner, req.name)
 					if err := c.updateStats(req); err != nil {
 						c.l.Errorf("ClientWithStaleData scheduler: updating stats data: %v", err)
+					} else {
+						c.l.Infof("ClientWithStaleData: scheduled stats update for %s/%s done", req.owner, req.name)
 					}
 					doneStatsUpdates <- key
 				}(req)
@@ -134,12 +144,14 @@ func (c *ClientWithStaleData) ProjectsByLanguage(ctx context.Context, language s
 		}
 		entryCreated := time.Unix(entry.Created, 0)
 		if entry.Count >= count && entryCreated.Add(c.ttl).After(time.Now()) {
-			go func() {
-				c.projectUpdates <- projectsDBUpdateRequest{
-					language: language,
-					count:    count,
-				}
-			}()
+			if entryCreated.Add(c.refreshTTL).Before(time.Now()) {
+				go func() {
+					c.projectUpdates <- projectsDBUpdateRequest{
+						language: language,
+						count:    count,
+					}
+				}()
+			}
 
 			projects := entry.Data
 			if len(projects) > count {
@@ -149,20 +161,15 @@ func (c *ClientWithStaleData) ProjectsByLanguage(ctx context.Context, language s
 		}
 	}
 
-	projects, err := c.client.ProjectsByLanguage(ctx, language, count)
-	if err != nil {
-		return projects, err
+	select {
+	case c.projectUpdates <- projectsDBUpdateRequest{
+		language: language,
+		count:    count,
+	}:
+		return nil, app.ScheduledForLaterError("scheduled")
+	default:
+		return nil, errors.New("stale data scheduler: no free slots left")
 	}
-
-	go func() {
-		c.projectUpdates <- projectsDBUpdateRequest{
-			language: language,
-			count:    count,
-			projects: &projects,
-		}
-	}()
-
-	return projects, nil
 }
 
 // StatsByProject returns stats by given github project params.
@@ -181,29 +188,26 @@ func (c *ClientWithStaleData) StatsByProject(ctx context.Context, name string, o
 		}
 		entryCreated := time.Unix(entry.Created, 0)
 		if entryCreated.Add(c.ttl).After(time.Now()) {
-			c.statsUpdates <- statsDBUpdateRequest{
-				name:  name,
-				owner: owner,
+			if entryCreated.Add(c.refreshTTL).Before(time.Now()) {
+				c.statsUpdates <- statsDBUpdateRequest{
+					name:  name,
+					owner: owner,
+				}
 			}
 
 			return entry.Data, nil
 		}
 	}
 
-	stats, err := c.client.StatsByProject(ctx, name, owner)
-	if err != nil {
-		return stats, err
+	select {
+	case c.statsUpdates <- statsDBUpdateRequest{
+		name:  name,
+		owner: owner,
+	}:
+		return nil, app.ScheduledForLaterError("scheduled")
+	default:
+		return nil, errors.New("stale data scheduler: no free slots left")
 	}
-
-	go func() {
-		c.statsUpdates <- statsDBUpdateRequest{
-			name:  name,
-			owner: owner,
-			stats: &stats,
-		}
-	}()
-
-	return stats, nil
 }
 
 // Close cleanups scheduler and closes underlying database.
@@ -215,17 +219,10 @@ func (c *ClientWithStaleData) Close() {
 }
 
 func (c *ClientWithStaleData) updateProjects(req projectsDBUpdateRequest) error {
-	var projects []app.Project
-	if req.projects == nil {
-		p, err := c.client.ProjectsByLanguage(context.Background(), req.language, req.count)
-		if err != nil {
-			return errors.Wrap(err, "calling client.ProjectsByLanguage")
-		}
-		projects = p
-	} else {
-		projects = *req.projects
+	projects, err := c.client.ProjectsByLanguage(context.Background(), req.language, req.count)
+	if err != nil {
+		return errors.Wrap(err, "calling client.ProjectsByLanguage")
 	}
-
 	if err := c.saveProjects(req.language, req.count, projects); err != nil {
 		return errors.Wrap(err, "saving projects")
 	}
@@ -234,20 +231,14 @@ func (c *ClientWithStaleData) updateProjects(req projectsDBUpdateRequest) error 
 }
 
 func (c *ClientWithStaleData) updateStats(req statsDBUpdateRequest) error {
-	var stats []app.ContributorStats
-	if req.stats == nil {
-		s, err := c.client.StatsByProject(context.Background(), req.name, req.owner)
-		if err != nil {
-			return errors.Wrap(err, "calling client.StatsByProject")
-		}
-		stats = s
-	} else {
-		stats = *req.stats
+	stats, err := c.client.StatsByProject(context.Background(), req.name, req.owner)
+	if err != nil {
+		return errors.Wrap(err, "calling client.StatsByProject")
 	}
-
 	if err := c.saveStats(req.name, req.owner, stats); err != nil {
 		return errors.Wrap(err, "saving stats")
 	}
+
 	return nil
 }
 
@@ -333,11 +324,9 @@ type statsDBEntry struct {
 type projectsDBUpdateRequest struct {
 	language string
 	count    int
-	projects *[]app.Project
 }
 
 type statsDBUpdateRequest struct {
 	name  string
 	owner string
-	stats *[]app.ContributorStats
 }

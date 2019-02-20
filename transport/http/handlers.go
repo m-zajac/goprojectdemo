@@ -57,6 +57,14 @@ func NewContributorsHandler(
 				http.Error(w, err.Error(), http.StatusBadRequest)
 				return
 			}
+			if app.IsTooManyRequestsError(err) {
+				http.Error(w, "", http.StatusTooManyRequests)
+				return
+			}
+			if app.IsScheduledForLaterError(err) {
+				http.Error(w, "", http.StatusAccepted)
+				return
+			}
 
 			http.Error(w, "", http.StatusInternalServerError)
 			l.Errorf("contributors http handler: service returned error: %v\n", err)

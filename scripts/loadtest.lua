@@ -10,7 +10,7 @@ languages = {
     "php"
 }
 
-counts = {3, 5, 6, 10, 15}
+counts = {3, 5, 6, 10}
 
 randomData = function(dataArray)
     return dataArray[math.random(1, table.getn(dataArray))]

@@ -25,7 +25,6 @@ type Client struct {
 	doer           HTTPDoer
 	address        string
 	authToken      string
-	timeout        time.Duration
 	acceptWaitTime time.Duration
 
 	projectsResponseMaxSize int
@@ -35,13 +34,12 @@ type Client struct {
 
 // NewClient creates new github client.
 // authToken is optional.
-func NewClient(doer HTTPDoer, address string, authToken string, timeout time.Duration) *Client {
+func NewClient(doer HTTPDoer, address string, authToken string) *Client {
 	c := Client{
 		doer:           doer,
 		address:        address,
 		authToken:      authToken,
-		timeout:        timeout,
-		acceptWaitTime: 2 * time.Second,
+		acceptWaitTime: 5 * time.Second,
 
 		projectsResponseMaxSize: 1024 * 1024 * 10,
 		statsResponseMaxSize:    1024 * 1024 * 30,
@@ -78,7 +76,7 @@ func (c *Client) ProjectsByLanguage(ctx context.Context, language string, count 
 
 	body, _, err := c.makeRequest(ctx, httpReq, c.projectsResponseMaxSize)
 	if err != nil {
-		return nil, err
+		return nil, errors.Wrap(err, "making http request")
 	}
 
 	var resp searchResponse
@@ -116,7 +114,7 @@ func (c *Client) StatsByProject(ctx context.Context, name string, owner string) 
 		tries++
 		b, code, err := c.makeRequest(ctx, httpReq, 1024*1024*100)
 		if err != nil {
-			return nil, err
+			return nil, errors.Wrap(err, "making http request")
 		}
 		if code == http.StatusAccepted {
 			if tries < c.numRetriesOnAccepted {
@@ -143,9 +141,6 @@ func (c *Client) makeRequest(ctx context.Context, req *http.Request, maxBytes in
 		req.Header.Set("Authorization", "token "+c.authToken)
 	}
 
-	ctx, cancel := context.WithTimeout(ctx, c.timeout)
-	defer cancel()
-
 	resp, err := c.doer.Do(req.WithContext(ctx))
 	if err != nil {
 		return nil, 0, errors.Wrap(err, "doing http request")
@@ -161,6 +156,9 @@ func (c *Client) makeRequest(ctx context.Context, req *http.Request, maxBytes in
 		return nil, resp.StatusCode, nil
 	}
 	if resp.StatusCode/100 > 3 {
+		if c.checkRateLimitExceeded(&resp.Header) {
+			return nil, resp.StatusCode, errors.New("rate limit exceeded")
+		}
 		return nil, resp.StatusCode, errors.Errorf("got invalid http status code: %d", resp.StatusCode)
 	}
 
@@ -170,4 +168,13 @@ func (c *Client) makeRequest(ctx context.Context, req *http.Request, maxBytes in
 	}
 
 	return b, resp.StatusCode, nil
+}
+
+func (c *Client) checkRateLimitExceeded(h *http.Header) bool {
+	if s := h.Get("X-RateLimit-Remaining"); s != "" {
+		if limit, err := strconv.Atoi(s); err == nil && limit == 0 {
+			return true
+		}
+	}
+	return false
 }

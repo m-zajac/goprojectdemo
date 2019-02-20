@@ -3,6 +3,7 @@ package app
 import (
 	"context"
 	"sort"
+	"time"
 
 	"github.com/pkg/errors"
 )
@@ -15,13 +16,15 @@ type GithubClient interface {
 
 // Service is main apps entry point. Provides all app functionality.
 type Service struct {
-	githubClient GithubClient
+	githubClient   GithubClient
+	requestTimeout time.Duration
 }
 
 // NewService creates new Service instance.
-func NewService(githubClient GithubClient) *Service {
+func NewService(githubClient GithubClient, requestTimeout time.Duration) *Service {
 	return &Service{
-		githubClient: githubClient,
+		githubClient:   githubClient,
+		requestTimeout: requestTimeout,
 	}
 }
 
@@ -38,9 +41,12 @@ func (s *Service) MostActiveContributors(
 		return nil, errors.New("count must be greater than zero")
 	}
 
+	ctx, cancel := context.WithTimeout(ctx, s.requestTimeout)
+	defer cancel()
+
 	projects, err := s.githubClient.ProjectsByLanguage(ctx, language, projectsCount)
 	if err != nil {
-		return nil, errors.Wrap(err, "retrieving projects")
+		return nil, errors.Wrapf(err, "retrieving projects for language '%s'", language)
 	}
 
 	stats, err := s.gatherStats(ctx, projects)

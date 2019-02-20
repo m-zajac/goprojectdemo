@@ -47,12 +47,12 @@ func main() {
 		limitedHTTPClient,
 		conf.GithubAPIAddress,
 		conf.GithubAPIToken,
-		conf.GithubTimeout,
 	)
 	githubStaleDataClient, err := github.NewClientWithStaleData(
 		githubClient,
 		kvStore,
 		conf.GithubDBDataTTL,
+		conf.GithubDBDataRefreshTTL,
 		l.WithField("component", "githubStaleDataClient"),
 	)
 	if err != nil {
@@ -71,6 +71,7 @@ func main() {
 
 	service := app.NewService(
 		githubCachedClient,
+		conf.ServiceResponseTimeout,
 	)
 
 	mux := http.NewMux(service, 60*time.Second, l.WithField("component", "mux"))

@@ -116,7 +116,7 @@ func TestClient_ProjectsByLanguage(t *testing.T) {
 			if timeout == 0 {
 				timeout = time.Minute
 			}
-			c := NewClient(tt.doer, "https://fake", "token", timeout)
+			c := NewClient(tt.doer, "https://fake", "token")
 			got, err := c.ProjectsByLanguage(
 				context.Background(),
 				tt.language,
@@ -355,11 +355,7 @@ func TestClient_StatsByProject(t *testing.T) {
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			timeout := tt.timeout
-			if timeout == 0 {
-				timeout = time.Minute
-			}
-			c := NewClient(tt.doer, "https://fake", "token", timeout)
+			c := NewClient(tt.doer, "https://fake", "token")
 			c.acceptWaitTime = 100 * time.Millisecond
 			got, err := c.StatsByProject(
 				context.Background(),

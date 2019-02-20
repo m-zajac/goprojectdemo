@@ -22,7 +22,7 @@ image:
 	@rm ./Dockerfile
 
 loadtest:
-	@wrk --latency -d 15m -s scripts/loadtest.lua http://localhost:8080
+	@wrk --latency -d 15m -t 2 -c 15 -s scripts/loadtest.lua http://localhost:8080
 
 proto:
 	@protoc -I api api/service.proto --go_out=plugins=grpc:transport/grpc

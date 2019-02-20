@@ -11,7 +11,7 @@ import (
 )
 
 func TestLimitedHTTPDoerRate(t *testing.T) {
-	maxRate := 500
+	maxRate := 500.0
 	testTime := 200 * time.Millisecond
 
 	doer := &mock.HTTPDoer{}
@@ -29,7 +29,7 @@ func TestLimitedHTTPDoerRate(t *testing.T) {
 
 	expectedDos := float64(maxRate) * float64(testTime) / float64(time.Second)
 	diff := math.Abs(float64(dos)-expectedDos) / expectedDos
-	if diff > 0.05 {
+	if diff > 0.1 {
 		t.Errorf("unexpected number of Dos: %d, want %d", dos, int(expectedDos))
 	}
 }

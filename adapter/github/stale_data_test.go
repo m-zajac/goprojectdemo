@@ -2,6 +2,7 @@ package github
 
 import (
 	"context"
+	"io/ioutil"
 	"reflect"
 	"sync/atomic"
 	"testing"
@@ -77,8 +78,11 @@ func TestClientWithStaleDataScheduler(t *testing.T) {
 			storeTokens := make(chan struct{}, 10)
 			store := mock.NewKVStore(nil, storeTokens)
 			l := logrus.New()
+			l.Out = ioutil.Discard
 
-			staleDataClient, err := NewClientWithStaleData(client, store, time.Minute, l)
+			ttl := time.Minute
+			refreshTTL := 10 * time.Second
+			staleDataClient, err := NewClientWithStaleData(client, store, ttl, refreshTTL, l)
 			if err != nil {
 				t.Fatalf("NewClientWithStaleData() error = %v", err)
 			}
@@ -102,7 +106,7 @@ func TestClientWithStaleDataScheduler(t *testing.T) {
 					t.Fatalf("%s: scheduler locked", step)
 				}
 
-				time.Sleep(10 * time.Millisecond)
+				time.Sleep(100 * time.Millisecond)
 
 				if pendingUpdates != expectedPendingUpdates {
 					t.Errorf("%s: pending scheduler updates count invalid: %d, want %d", step, pendingUpdates, expectedPendingUpdates)
@@ -121,45 +125,37 @@ func TestClientWithStaleDataScheduler(t *testing.T) {
 			checkNextState("init scheduler")
 
 			// PHASE1: Read with empty db
-			t.Log("PHASE1: First call - should read from db, schedule update then call client")
-			expectedClientCalls++
-			clientTokens <- struct{}{} // allow client call
-			if err = staleDataClientCall(); err != nil {
-				t.Errorf("phase1: ClientWithStaleData call error = %v", err)
+			t.Log("PHASE1: First call - should read from db, schedule update")
+			if err = staleDataClientCall(); !app.IsScheduledForLaterError(err) {
+				t.Errorf("phase1: ClientWithStaleData call unexpected error = %v", err)
 			}
 			expectedStoreReads++
 			expectedPendingUpdates++
 			checkNextState("phase1: after ClientWithStaleData call")
 
-			t.Log("PHASE1: Next scheduler state - should see empty pending queue and store update")
+			t.Log("PHASE1: Next scheduler state - should see empty pending queue, client called and store update")
 			expectedPendingUpdates--
 			expectedStoreUpdates++
 			storeTokens <- struct{}{} // allow store write
+			expectedClientCalls++
+			clientTokens <- struct{}{} // allow client call
 			checkNextState("phase1: after scheduler finishes updates")
 
 			// PHASE2: Read with data already in db
-			t.Log("PHASE2: Second call - should read from db but NOT call client, should schedule update")
+			t.Log("PHASE2: Second call - should read from db but NOT call client")
 			if err = staleDataClientCall(); err != nil {
 				t.Errorf("phase2: ClientWithStaleData call error = %v", err)
 			}
 			expectedStoreReads++
-			expectedPendingUpdates++
-			checkNextState("phase2: after ClientWithStaleData call")
-
-			t.Log("PHASE2: Next scheduler state - should see client called, empty pending queue and new store update")
-			expectedPendingUpdates--
-			expectedStoreUpdates++
-			storeTokens <- struct{}{} // allow store write
-			expectedClientCalls++
-			clientTokens <- struct{}{} // allow client call
-			checkNextState("phase2: after scheduler finishes updates")
+			// don't call checkNextState here, nothing is scheduled
 
 			// PHASE3: Read with data in db, but ttl exceeded
-			t.Log("PHASE3: Third call - should read from db, schedule update then call client")
+			t.Log("PHASE3: Third call - should read from db, schedule update")
+			staleDataClient.ttl = 0
 			expectedClientCalls++
 			clientTokens <- struct{}{} // allow client call
-			if err = staleDataClientCall(); err != nil {
-				t.Errorf("phase3: ClientWithStaleData call error = %v", err)
+			if err = staleDataClientCall(); !app.IsScheduledForLaterError(err) {
+				t.Errorf("phase3: ClientWithStaleData call unexpected error = %v", err)
 			}
 			expectedStoreReads++
 			expectedPendingUpdates++
@@ -200,14 +196,22 @@ func TestClientWithStaleDataProjectsByLanguage(t *testing.T) {
 	store := mock.NewKVStore(nil, nil)
 	l := logrus.New()
 
-	staleDataClient, err := NewClientWithStaleData(client, store, time.Minute, l)
+	staleDataClient, err := NewClientWithStaleData(client, store, time.Minute, time.Minute, l)
 	if err != nil {
 		t.Fatalf("NewClientWithStaleData() error = %v", err)
 	}
+	staleDataClient.RunScheduler()
+
+	_, err = staleDataClient.ProjectsByLanguage(context.Background(), "go", 2)
+	if !app.IsScheduledForLaterError(err) {
+		t.Fatalf("ProjectsByLanguage() second call unexpected error = %v", err)
+	}
+
+	time.Sleep(10 * time.Millisecond)
 
 	projects, err := staleDataClient.ProjectsByLanguage(context.Background(), "go", 2)
 	if err != nil {
-		t.Fatalf("ProjectsByLanguage() subsequent call error = %v", err)
+		t.Fatalf("ProjectsByLanguage() third call unexpected error = %v", err)
 	}
 	if !reflect.DeepEqual(projects, projectsResponse) {
 		t.Fatalf("ProjectsByLanguage() returned invalid first project: %+v, want %+v", projects, projectsResponse)
@@ -247,14 +251,22 @@ func TestClientWithStaleDataStatsByProject(t *testing.T) {
 	store := mock.NewKVStore(nil, nil)
 	l := logrus.New()
 
-	staleDataClient, err := NewClientWithStaleData(client, store, time.Minute, l)
+	staleDataClient, err := NewClientWithStaleData(client, store, time.Minute, time.Minute, l)
 	if err != nil {
 		t.Fatalf("NewClientWithStaleData() error = %v", err)
 	}
+	staleDataClient.RunScheduler()
+
+	_, err = staleDataClient.StatsByProject(context.Background(), "go", "golang")
+	if !app.IsScheduledForLaterError(err) {
+		t.Fatalf("StatsByProject() second call unexpected error = %v", err)
+	}
+
+	time.Sleep(10 * time.Millisecond)
 
 	stats, err := staleDataClient.StatsByProject(context.Background(), "go", "golang")
 	if err != nil {
-		t.Fatalf("StatsByProject() subsequent call error = %v", err)
+		t.Fatalf("StatsByProject() third call unexpected error = %v", err)
 	}
 	if !reflect.DeepEqual(stats, statsResponse) {
 		t.Fatalf("StatsByProject() returned invalid first project: %+v, want %+v", stats, statsResponse)
