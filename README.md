@@ -1,6 +1,6 @@
 # goprojectdemo [![Build Status](https://travis-ci.org/m-zajac/goprojectdemo.svg?branch=master)](https://travis-ci.org/m-zajac/goprojectdemo) [![codecov](https://codecov.io/gh/m-zajac/goprojectdemo/branch/master/graph/badge.svg)](https://codecov.io/gh/m-zajac/goprojectdemo) [![Go Report Card](https://goreportcard.com/badge/github.com/m-zajac/goprojectdemo)](https://goreportcard.com/report/github.com/m-zajac/goprojectdemo) [![GoDoc](https://godoc.org/github.com/m-zajac/goprojectdemo?status.svg)](http://godoc.org/github.com/m-zajac/goprojectdemo)
 
-Simple go application providing api for checking best contributors for given language.
+Simple go application providing API for checking best contributors for given language.
 
 # Purpose
 
@@ -8,8 +8,8 @@ This project is intended to showcase how I'd write small to medium sized go appl
 
 I'm aiming to demonstrate how you can:
 - Write readable, testable code in go.
-- Create single reponsibility components, that are wired together as dependencies.
-- Separate appication/business logic from other code (Ports and Adapters pattern!).
+- Create single responsibility components, that are wired together as dependencies.
+- Separate application/business logic from other code (Ports and Adapters pattern!).
 - Structure project in a way that makes it easy to achieve that separation, show how to make package dependencies.
 
 Check and see whether I'm doing this the right way :) Feel free to leave any comment or create an issue if something can be done better.
@@ -25,7 +25,7 @@ Check and see whether I'm doing this the right way :) Feel free to leave any com
 
 - Can use some storage or db for persistent cache.
 - Persistent cache could not be fast enough...
-- API can return "Accepted" status, if data isn't available at some level of cache yet. In this case the same request should be eventualy responded with proper data.
+- API can return "Accepted" status, if data isn't available at some level of cache yet. In this case the same request should be eventually responded with proper data.
 
 # Development
 
