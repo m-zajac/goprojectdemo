@@ -29,13 +29,17 @@ Check and see whether I'm doing this the right way :) Feel free to leave any com
 
 # Development
 
+- Build binaries: `make build`
 - Start server: `make start`
 - Run tests: `make test`
 - Create docker image: `make image`
 - Generate grpc code: `make proto`
+
+`make build` generates `grpclient` binary for testing grpc server. Use `./grpcclient -h` for more info.
 
 # Things to do/improve
 
 - GRPC equivalent of http status 202 is not implemented.
 - Proper handling githubs 422 responses, return 404.
 - Rate limiter is very basic, needs some work.
+- There is some untested code...
