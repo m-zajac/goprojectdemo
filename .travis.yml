@@ -3,9 +3,13 @@ go_import_path: github.com/m-zajac/goprojectdemo
 go:
   - 1.11.x
 
+env:
+  - GO111MODULE=on
+
 script:
-  - env GO111MODULE=on go build ./cmd/...
-  - env GO111MODULE=on go test -race -coverprofile=coverage.txt -covermode=atomic ./...
+  - go build ./cmd/goprojectdemo
+  - go build ./cmd/grpcclient
+  - go test -race -coverprofile=coverage.txt -covermode=atomic ./...
 
 after_success:
   - bash <(curl -s https://codecov.io/bash)

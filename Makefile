@@ -1,7 +1,8 @@
 .PHONY: build start test clean image loadtest proto
 
 build:
-	@go build ./cmd/...
+	@go build ./cmd/goprojectdemo
+	@go build ./cmd/grpcclient
 
 start:
 	@go build ./cmd/goprojectdemo && ./goprojectdemo
@@ -11,7 +12,7 @@ test:
 
 clean:
 	@rm -f ./goprojectdemo
-	@rm -f ./goprojectdemoclient
+	@rm -f ./grpcclient
 	@rm -f ./github.data
 	@rm -f ./Dockerfile
 

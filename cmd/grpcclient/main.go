@@ -3,8 +3,8 @@ package main
 
 import (
 	"context"
-	"encoding/json"
 	"flag"
+	"fmt"
 	"log"
 
 	appGrpc "github.com/m-zajac/goprojectdemo/transport/grpc"
@@ -12,8 +12,10 @@ import (
 )
 
 var (
-	serverAddr = flag.String("s", "localhost:9090", "The server address in the format of host:port")
-	language   = flag.String("l", "go", "Programming language")
+	serverAddr    = flag.String("s", "localhost:9090", "The server address in the format of host:port")
+	language      = flag.String("lang", "go", "Programming language")
+	projectsCount = flag.Int("pc", 5, "Projects count")
+	count         = flag.Int("c", 10, "Results count")
 )
 
 func main() {
@@ -28,18 +30,17 @@ func main() {
 
 	req := appGrpc.Request{
 		Language:      *language,
-		ProjectsCount: 5,
-		Count:         3,
+		ProjectsCount: int32(*projectsCount),
+		Count:         int32(*count),
 	}
 	resp, err := client.MostActiveContributors(context.Background(), &req)
 	if err != nil {
 		log.Fatalf("server response error: %v", err)
 	}
 
-	b, err := json.MarshalIndent(resp, "", "  ")
-	if err != nil {
-		log.Fatalf("encoding response to json error: %v", err)
+	fmt.Print("   Commits | Login\n")
+	fmt.Print("------------------------\n")
+	for _, s := range resp.Stat {
+		fmt.Printf("%10d | %s\n", s.Commits, s.Contributor.Login)
 	}
-
-	println(string(b))
 }
