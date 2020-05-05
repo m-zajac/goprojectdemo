@@ -7,7 +7,7 @@ import (
 	"fmt"
 	"log"
 
-	appGrpc "github.com/m-zajac/goprojectdemo/transport/grpc"
+	appGrpc "github.com/m-zajac/goprojectdemo/internal/api/grpc"
 	"google.golang.org/grpc"
 )
 

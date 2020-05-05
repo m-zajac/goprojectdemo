@@ -5,16 +5,14 @@ import (
 	"sync"
 	"time"
 
-	"github.com/m-zajac/goprojectdemo/database"
-	"github.com/m-zajac/goprojectdemo/limiter"
-	"github.com/sirupsen/logrus"
-
-	"github.com/m-zajac/goprojectdemo/app"
-
 	"github.com/kelseyhightower/envconfig"
-	"github.com/m-zajac/goprojectdemo/adapter/github"
-	"github.com/m-zajac/goprojectdemo/transport/grpc"
-	"github.com/m-zajac/goprojectdemo/transport/http"
+	"github.com/m-zajac/goprojectdemo/internal/adapter/github"
+	"github.com/m-zajac/goprojectdemo/internal/api/grpc"
+	"github.com/m-zajac/goprojectdemo/internal/api/http"
+	"github.com/m-zajac/goprojectdemo/internal/api/http/limiter"
+	"github.com/m-zajac/goprojectdemo/internal/app"
+	"github.com/m-zajac/goprojectdemo/internal/database"
+	"github.com/sirupsen/logrus"
 )
 
 func main() {
@@ -29,7 +27,7 @@ func main() {
 	httpClient := &netHttp.Client{
 		Timeout: 30 * time.Second,
 	}
-	limitedHTTPClient := limiter.NewLimitedHTTPDoer(
+	limitedHTTPClient := limiter.NewHTTPDoer(
 		httpClient,
 		conf.GithubAPIRateLimit,
 	)

@@ -1,16 +1,17 @@
 module github.com/m-zajac/goprojectdemo
 
+go 1.14
+
 require (
-	github.com/etcd-io/bbolt v1.3.2
-	github.com/golang/protobuf v1.2.0
-	github.com/hashicorp/golang-lru v0.5.0
-	github.com/json-iterator/go v1.1.5
-	github.com/kelseyhightower/envconfig v1.3.0
-	github.com/modern-go/concurrent v0.0.0-20180306012644-bacd9c7ef1dd // indirect
-	github.com/modern-go/reflect2 v1.0.1 // indirect
-	github.com/pkg/errors v0.8.1
-	github.com/sirupsen/logrus v1.3.0
-	golang.org/x/net v0.0.0-20190213061140-3a22650c66bd
-	golang.org/x/time v0.0.0-20181108054448-85acf8d2951c
-	google.golang.org/grpc v1.18.0
+	github.com/golang/mock v1.4.3
+	github.com/golang/protobuf v1.4.1
+	github.com/hashicorp/golang-lru v0.5.4
+	github.com/kelseyhightower/envconfig v1.4.0
+	github.com/sirupsen/logrus v1.6.0
+	github.com/stretchr/testify v1.2.2
+	go.etcd.io/bbolt v1.3.4
+	golang.org/x/net v0.0.0-20190620200207-3b0461eec859 // indirect
+	golang.org/x/time v0.0.0-20200416051211-89c76fbcd5d1
+	google.golang.org/grpc v1.29.1
+	google.golang.org/protobuf v1.22.0
 )
